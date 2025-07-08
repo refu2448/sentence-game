@@ -1,44 +1,5 @@
 import React, { useState } from 'react';
-
-// 미리 준비된 영어 지문들
-const presetTexts = [
-  {
-    id: 1,
-    title: '일상 대화',
-    content:
-      "Good morning! How are you today? I'm doing well, thank you. What are your plans for the weekend? I plan to visit my friends and go shopping.",
-  },
-  {
-    id: 2,
-    title: '환경 보호',
-    content:
-      'Climate change is a serious global issue. We need to reduce our carbon footprint. Recycling helps protect the environment. Everyone should use renewable energy sources whenever possible.',
-  },
-  {
-    id: 3,
-    title: '기술과 생활',
-    content:
-      'Technology has changed our daily lives significantly. Smartphones connect us to the world instantly. Social media allows us to share experiences with friends. However, we should use technology wisely and responsibly.',
-  },
-  {
-    id: 4,
-    title: '건강한 생활',
-    content:
-      'Regular exercise is important for good health. Eating nutritious food gives us energy. Getting enough sleep helps our body recover. Drinking plenty of water keeps us hydrated throughout the day.',
-  },
-  {
-    id: 5,
-    title: '여행 경험',
-    content:
-      'Traveling opens our minds to new cultures. Meeting local people creates memorable experiences. Trying different foods is always exciting. Taking photos helps us remember beautiful moments forever.',
-  },
-  {
-    id: 6,
-    title: '학습과 성장',
-    content:
-      'Learning new skills takes time and practice. Making mistakes is part of the learning process. Reading books expands our knowledge and vocabulary. Setting goals helps us stay motivated and focused.',
-  },
-];
+import presetTexts from './presetTexts';
 
 // 문장 단위로 분할 및 고유 id 부여
 function splitSentences(text) {
@@ -65,25 +26,34 @@ function App() {
   const [sentences, setSentences] = useState([]);
   const [shuffled, setShuffled] = useState([]);
   const [draggedIndex, setDraggedIndex] = useState(null);
+  const [step, setStep] = useState('select');
+  const [selectedTitle, setSelectedTitle] = useState('');
+  const [showMessage, setShowMessage] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(2);
 
-  // 프리셋 선택 시 문장 분할 & 섞기
-  const handlePresetSelect = (selectedText) => {
+  const resetToHome = () => {
+    setStep('select');
+    setSentences([]);
+    setShuffled([]);
+    setSelectedTitle('');
+  };
+
+  const handlePresetSelect = (selectedText, title) => {
     const s = splitSentences(selectedText);
     setSentences(s);
     setShuffled(shuffle(s));
+    setSelectedTitle(title);
+    setStep('solve');
   };
 
-  // 드래그 시작
   const handleDragStart = (e, index) => {
     setDraggedIndex(index);
   };
 
-  // 드래그 중(위치 허용)
   const handleDragOver = (e) => {
     e.preventDefault();
   };
 
-  // 드롭(순서 변경)
   const handleDrop = (e, dropIndex) => {
     e.preventDefault();
     if (draggedIndex === null) return;
@@ -94,23 +64,34 @@ function App() {
     setDraggedIndex(null);
   };
 
-  // 드래그 종료
   const handleDragEnd = () => {
     setDraggedIndex(null);
   };
 
-  // 정답 확인
   const check = () => {
     const original = sentences.map((s) => s.content).join('');
     const current = shuffled.map((s) => s.content).join('');
     if (original === current) {
-      alert('🎉 정답입니다!');
+      setTimeLeft(2);
+      setShowMessage(true);
     } else {
       alert('❌ 순서가 다릅니다! 다시 시도해보세요.');
     }
   };
 
-  // 위로 이동
+  React.useEffect(() => {
+    if (!showMessage) return;
+    if (timeLeft <= 0) {
+      setShowMessage(false);
+      resetToHome();
+      return;
+    }
+    const timer = setTimeout(() => {
+      setTimeLeft((prev) => prev - 1);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [showMessage, timeLeft]);
+
   const moveUp = (index) => {
     if (index === 0) return;
     const items = Array.from(shuffled);
@@ -118,7 +99,6 @@ function App() {
     setShuffled(items);
   };
 
-  // 아래로 이동
   const moveDown = (index) => {
     if (index === shuffled.length - 1) return;
     const items = Array.from(shuffled);
@@ -244,102 +224,207 @@ function App() {
       <div style={styles.card}>
         <h2 style={styles.title}>📝 영어 문장 순서 맞추기</h2>
 
-        {/* 지문 선택 */}
-        <div style={{ marginBottom: 24 }}>
-          <h3
-            style={{
-              fontSize: 20,
-              fontWeight: 600,
-              marginBottom: 16,
-              color: '#374151',
-              textAlign: 'center',
-            }}
-          >
-            📚 지문을 선택하세요
-          </h3>
-          <div style={styles.presetGrid}>
-            {presetTexts.map((preset) => (
-              <button
-                key={preset.id}
-                style={styles.presetBtn}
-                onClick={() => handlePresetSelect(preset.content)}
-                onMouseOver={(e) => {
-                  e.target.style.backgroundColor = '#f8fafc';
-                  e.target.style.borderColor = '#3b82f6';
-                  e.target.style.transform = 'translateY(-2px)';
-                  e.target.style.boxShadow = '0 4px 15px rgba(0,0,0,0.1)';
-                }}
-                onMouseOut={(e) => {
-                  e.target.style.backgroundColor = 'white';
-                  e.target.style.borderColor = '#e2e8f0';
-                  e.target.style.transform = 'translateY(0)';
-                  e.target.style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)';
-                }}
-              >
-                {preset.title}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* 드래그앤드롭 영역 */}
-        <div style={styles.dropArea}>
-          {shuffled.length === 0 ? (
-            <div
+        {step === 'select' && (
+          <div style={{ marginBottom: 24 }}>
+            <h3
               style={{
-                color: '#64748b',
+                fontSize: 20,
+                fontWeight: 600,
+                marginBottom: 16,
+                color: '#374151',
                 textAlign: 'center',
-                padding: '40px 20px',
-                fontSize: 18,
-                fontWeight: 500,
               }}
             >
-              ✨ 위에서 지문을 선택해주세요!
-            </div>
-          ) : (
-            shuffled.map((item, idx) => (
-              <div
-                key={item.id}
-                draggable
-                onDragStart={(e) => handleDragStart(e, idx)}
-                onDragOver={handleDragOver}
-                onDrop={(e) => handleDrop(e, idx)}
-                onDragEnd={handleDragEnd}
-                style={styles.cardItem(draggedIndex === idx)}
-              >
-                <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-                  <span style={styles.numberBadge}>{idx + 1}</span>
-                  <span style={{ color: '#1e293b' }}>{item.content}</span>
-                </div>
-                <div
-                  style={{ display: 'flex', flexDirection: 'column', gap: 2 }}
+              📚 지문을 선택하세요
+            </h3>
+            <div style={styles.presetGrid}>
+              {presetTexts.map((preset) => (
+                <button
+                  key={preset.id}
+                  style={styles.presetBtn}
+                  onClick={() =>
+                    handlePresetSelect(preset.content, preset.title)
+                  }
+                  onMouseOver={(e) => {
+                    e.target.style.backgroundColor = '#f8fafc';
+                    e.target.style.borderColor = '#3b82f6';
+                    e.target.style.transform = 'translateY(-2px)';
+                    e.target.style.boxShadow = '0 4px 15px rgba(0,0,0,0.1)';
+                  }}
+                  onMouseOut={(e) => {
+                    e.target.style.backgroundColor = 'white';
+                    e.target.style.borderColor = '#e2e8f0';
+                    e.target.style.transform = 'translateY(0)';
+                    e.target.style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)';
+                  }}
                 >
-                  <button
-                    onClick={() => moveUp(idx)}
-                    disabled={idx === 0}
-                    style={styles.upDownBtn(idx === 0)}
-                  >
-                    ↑
-                  </button>
-                  <button
-                    onClick={() => moveDown(idx)}
-                    disabled={idx === shuffled.length - 1}
-                    style={styles.upDownBtn(idx === shuffled.length - 1)}
-                  >
-                    ↓
-                  </button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
+                  {preset.title}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
-        {/* 정답 확인 버튼 */}
-        {shuffled.length > 0 && (
-          <div style={{ textAlign: 'center' }}>
-            <button style={styles.checkBtn} onClick={check}>
-              ✅ 정답 확인
-            </button>
+        {step === 'solve' && (
+          <>
+            <div style={{ textAlign: 'right', marginBottom: 8 }}>
+              <button
+                onClick={resetToHome}
+                style={{ ...styles.checkBtn, background: '#e11d48' }}
+              >
+                🔙 처음으로
+              </button>
+            </div>
+            <h3
+              style={{
+                textAlign: 'center',
+                marginBottom: 16,
+                color: '#1e293b',
+              }}
+            >
+              🧩 {selectedTitle}
+            </h3>
+            <div style={styles.dropArea}>
+              {shuffled.map((item, idx) => (
+                <div
+                  key={item.id}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, idx)}
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, idx)}
+                  onDragEnd={handleDragEnd}
+                  style={styles.cardItem(draggedIndex === idx)}
+                >
+                  <div
+                    style={{ flex: 1, display: 'flex', alignItems: 'center' }}
+                  >
+                    <span style={styles.numberBadge}>{idx + 1}</span>
+                    <span style={{ color: '#1e293b' }}>{item.content}</span>
+                  </div>
+                  <div
+                    style={{ display: 'flex', flexDirection: 'column', gap: 2 }}
+                  >
+                    <button
+                      onClick={() => moveUp(idx)}
+                      disabled={idx === 0}
+                      style={styles.upDownBtn(idx === 0)}
+                    >
+                      ↑
+                    </button>
+                    <button
+                      onClick={() => moveDown(idx)}
+                      disabled={idx === shuffled.length - 1}
+                      style={styles.upDownBtn(idx === shuffled.length - 1)}
+                    >
+                      ↓
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ textAlign: 'center' }}>
+              <button style={styles.checkBtn} onClick={check}>
+                ✅ 정답 확인
+              </button>
+            </div>
+          </>
+        )}
+        {showMessage && (
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              backgroundColor: 'rgba(0,0,0,0.4)',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              zIndex: 1000,
+            }}
+          >
+            <div
+              style={{
+                position: 'relative',
+                backgroundColor: 'white',
+                padding: 24,
+                borderRadius: 12,
+                boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
+                textAlign: 'center',
+                maxWidth: 360,
+                width: '90%',
+              }}
+            >
+              <button
+                onClick={() => {
+                  setShowMessage(false);
+                  resetToHome();
+                }}
+                style={{
+                  position: 'absolute',
+                  top: 12,
+                  right: 12,
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: 20,
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  color: '#94a3b8',
+                }}
+              >
+                ×
+              </button>
+              <div
+                style={{
+                  fontWeight: 700,
+                  fontSize: 18,
+                  color: '#10b981',
+                  marginBottom: 12,
+                }}
+              >
+                🎉 정답입니다! {timeLeft}초 후 처음 화면으로 돌아갑니다.
+              </div>
+              <div
+                style={{
+                  width: '100%',
+                  height: 10,
+                  backgroundColor: '#e2e8f0',
+                  borderRadius: 6,
+                  overflow: 'hidden',
+                }}
+              >
+                <div
+                  style={{
+                    width: `${(timeLeft / 2) * 100}%`,
+                    height: '100%',
+                    backgroundColor: '#10b981',
+                    transition: 'width 1s linear',
+                  }}
+                />
+              </div>
+              <button
+                onClick={() => {
+                  setShowMessage(false);
+                  resetToHome();
+                }}
+                style={{
+                  marginTop: 16,
+                  padding: '10px 20px',
+                  backgroundColor: '#ef4444',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: 8,
+                  fontSize: 15,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+                }}
+              >
+                🚪 나가기
+              </button>
+            </div>
           </div>
         )}
       </div>
