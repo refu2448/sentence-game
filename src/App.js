@@ -1,5 +1,46 @@
 import React, { useState } from 'react';
 
+// 미리 준비된 영어 지문들
+const presetTexts = [
+  {
+    id: 1,
+    title: '일상 대화',
+    content:
+      "Good morning! How are you today? I'm doing well, thank you. What are your plans for the weekend? I plan to visit my friends and go shopping.",
+  },
+  {
+    id: 2,
+    title: '환경 보호',
+    content:
+      'Climate change is a serious global issue. We need to reduce our carbon footprint. Recycling helps protect the environment. Everyone should use renewable energy sources whenever possible.',
+  },
+  {
+    id: 3,
+    title: '기술과 생활',
+    content:
+      'Technology has changed our daily lives significantly. Smartphones connect us to the world instantly. Social media allows us to share experiences with friends. However, we should use technology wisely and responsibly.',
+  },
+  {
+    id: 4,
+    title: '건강한 생활',
+    content:
+      'Regular exercise is important for good health. Eating nutritious food gives us energy. Getting enough sleep helps our body recover. Drinking plenty of water keeps us hydrated throughout the day.',
+  },
+  {
+    id: 5,
+    title: '여행 경험',
+    content:
+      'Traveling opens our minds to new cultures. Meeting local people creates memorable experiences. Trying different foods is always exciting. Taking photos helps us remember beautiful moments forever.',
+  },
+  {
+    id: 6,
+    title: '학습과 성장',
+    content:
+      'Learning new skills takes time and practice. Making mistakes is part of the learning process. Reading books expands our knowledge and vocabulary. Setting goals helps us stay motivated and focused.',
+  },
+];
+
+// 문장 단위로 분할 및 고유 id 부여
 function splitSentences(text) {
   return text
     .split(/(?<=[.?!])\s+/)
@@ -10,6 +51,7 @@ function splitSentences(text) {
     }));
 }
 
+// Fisher-Yates shuffle
 function shuffle(array) {
   const arr = array.slice();
   for (let i = arr.length - 1; i > 0; i--) {
@@ -20,45 +62,44 @@ function shuffle(array) {
 }
 
 function App() {
-  const [input, setInput] = useState('');
   const [sentences, setSentences] = useState([]);
   const [shuffled, setShuffled] = useState([]);
   const [draggedIndex, setDraggedIndex] = useState(null);
 
-  const handleSplit = () => {
-    const s = splitSentences(input);
+  // 프리셋 선택 시 문장 분할 & 섞기
+  const handlePresetSelect = (selectedText) => {
+    const s = splitSentences(selectedText);
     setSentences(s);
     setShuffled(shuffle(s));
   };
 
+  // 드래그 시작
   const handleDragStart = (e, index) => {
     setDraggedIndex(index);
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/html', e.target.outerHTML);
-    e.dataTransfer.setData('text/plain', e.target.textContent);
   };
 
+  // 드래그 중(위치 허용)
   const handleDragOver = (e) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
   };
 
+  // 드롭(순서 변경)
   const handleDrop = (e, dropIndex) => {
     e.preventDefault();
     if (draggedIndex === null) return;
-
     const items = Array.from(shuffled);
     const [reordered] = items.splice(draggedIndex, 1);
     items.splice(dropIndex, 0, reordered);
-
     setShuffled(items);
     setDraggedIndex(null);
   };
 
+  // 드래그 종료
   const handleDragEnd = () => {
     setDraggedIndex(null);
   };
 
+  // 정답 확인
   const check = () => {
     const original = sentences.map((s) => s.content).join('');
     const current = shuffled.map((s) => s.content).join('');
@@ -69,6 +110,7 @@ function App() {
     }
   };
 
+  // 위로 이동
   const moveUp = (index) => {
     if (index === 0) return;
     const items = Array.from(shuffled);
@@ -76,6 +118,7 @@ function App() {
     setShuffled(items);
   };
 
+  // 아래로 이동
   const moveDown = (index) => {
     if (index === shuffled.length - 1) return;
     const items = Array.from(shuffled);
@@ -83,122 +126,175 @@ function App() {
     setShuffled(items);
   };
 
+  // 스타일링 객체
+  const styles = {
+    container: {
+      maxWidth: 800,
+      margin: '0 auto',
+      padding: 20,
+      fontFamily:
+        '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      backgroundColor: '#f8fafc',
+      minHeight: '100vh',
+    },
+    card: {
+      backgroundColor: 'white',
+      borderRadius: 16,
+      padding: 30,
+      boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+      border: '1px solid #e2e8f0',
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: 'bold',
+      marginBottom: 24,
+      textAlign: 'center',
+      color: '#1e293b',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      WebkitBackgroundClip: 'text',
+      WebkitTextFillColor: 'transparent',
+    },
+    presetGrid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+      gap: 12,
+      marginBottom: 16,
+    },
+    presetBtn: {
+      padding: '16px 20px',
+      backgroundColor: 'white',
+      border: '2px solid #e2e8f0',
+      borderRadius: 12,
+      fontSize: 16,
+      fontWeight: 600,
+      cursor: 'pointer',
+      color: '#374151',
+      textAlign: 'center',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+      transition: 'all 0.3s',
+    },
+    dropArea: {
+      border: '2px dashed #cbd5e1',
+      borderRadius: 12,
+      padding: 20,
+      minHeight: 200,
+      backgroundColor: '#f8fafc',
+      transition: 'all 0.3s',
+    },
+    cardItem: (isDragging) => ({
+      backgroundColor: 'white',
+      border: '2px solid #e2e8f0',
+      borderRadius: 10,
+      padding: 16,
+      marginBottom: 12,
+      cursor: 'move',
+      userSelect: 'none',
+      fontSize: 17,
+      lineHeight: 1.6,
+      opacity: isDragging ? 0.5 : 1,
+      boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+      transition: 'all 0.3s',
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    }),
+    numberBadge: {
+      display: 'inline-block',
+      width: 24,
+      height: 24,
+      backgroundColor: '#3b82f6',
+      color: 'white',
+      borderRadius: '50%',
+      textAlign: 'center',
+      lineHeight: '24px',
+      fontSize: 14,
+      fontWeight: 'bold',
+      marginRight: 12,
+    },
+    upDownBtn: (disabled) => ({
+      width: 32,
+      height: 32,
+      border: 'none',
+      borderRadius: 6,
+      fontSize: 16,
+      fontWeight: 'bold',
+      cursor: disabled ? 'not-allowed' : 'pointer',
+      backgroundColor: disabled ? '#e2e8f0' : '#3b82f6',
+      color: disabled ? '#94a3b8' : 'white',
+      transition: 'all 0.2s',
+      marginBottom: 4,
+    }),
+    checkBtn: {
+      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+      color: 'white',
+      padding: '14px 28px',
+      border: 'none',
+      borderRadius: 10,
+      fontSize: 18,
+      fontWeight: 600,
+      cursor: 'pointer',
+      boxShadow: '0 4px 15px rgba(16, 185, 129, 0.3)',
+      marginTop: 24,
+      transition: 'all 0.3s',
+    },
+  };
+
   return (
-    <div
-      style={{
-        maxWidth: '800px',
-        margin: '0 auto',
-        padding: '20px',
-        fontFamily:
-          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-        backgroundColor: '#f8fafc',
-        minHeight: '100vh',
-      }}
-    >
-      <div
-        style={{
-          backgroundColor: 'white',
-          borderRadius: '16px',
-          padding: '30px',
-          boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
-          border: '1px solid #e2e8f0',
-        }}
-      >
-        <h2
-          style={{
-            fontSize: '28px',
-            fontWeight: 'bold',
-            marginBottom: '24px',
-            textAlign: 'center',
-            color: '#1e293b',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-          }}
-        >
-          📝 영어 문장 순서 맞추기
-        </h2>
+    <div style={styles.container}>
+      <div style={styles.card}>
+        <h2 style={styles.title}>📝 영어 문장 순서 맞추기</h2>
 
-        <textarea
-          rows={6}
-          style={{
-            width: '100%',
-            padding: '16px',
-            border: '2px solid #e2e8f0',
-            borderRadius: '12px',
-            fontSize: '16px',
-            fontFamily: 'inherit',
-            resize: 'vertical',
-            outline: 'none',
-            transition: 'all 0.3s ease',
-            backgroundColor: '#fafbfc',
-            lineHeight: '1.5',
-          }}
-          placeholder="영어 지문을 입력하세요... 
-예: I love programming. It is very interesting. Programming helps me solve problems."
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onFocus={(e) => {
-            e.target.style.borderColor = '#3b82f6';
-            e.target.style.backgroundColor = 'white';
-            e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
-          }}
-          onBlur={(e) => {
-            e.target.style.borderColor = '#e2e8f0';
-            e.target.style.backgroundColor = '#fafbfc';
-            e.target.style.boxShadow = 'none';
-          }}
-        />
-
-        <div style={{ marginTop: '16px', marginBottom: '24px' }}>
-          <button
-            onClick={handleSplit}
+        {/* 지문 선택 */}
+        <div style={{ marginBottom: 24 }}>
+          <h3
             style={{
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              color: 'white',
-              padding: '12px 24px',
-              border: 'none',
-              borderRadius: '10px',
-              fontSize: '16px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)',
-            }}
-            onMouseOver={(e) => {
-              e.target.style.transform = 'translateY(-2px)';
-              e.target.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.4)';
-            }}
-            onMouseOut={(e) => {
-              e.target.style.transform = 'translateY(0)';
-              e.target.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.3)';
+              fontSize: 20,
+              fontWeight: 600,
+              marginBottom: 16,
+              color: '#374151',
+              textAlign: 'center',
             }}
           >
-            🔀 문장 분할 & 섞기
-          </button>
+            📚 지문을 선택하세요
+          </h3>
+          <div style={styles.presetGrid}>
+            {presetTexts.map((preset) => (
+              <button
+                key={preset.id}
+                style={styles.presetBtn}
+                onClick={() => handlePresetSelect(preset.content)}
+                onMouseOver={(e) => {
+                  e.target.style.backgroundColor = '#f8fafc';
+                  e.target.style.borderColor = '#3b82f6';
+                  e.target.style.transform = 'translateY(-2px)';
+                  e.target.style.boxShadow = '0 4px 15px rgba(0,0,0,0.1)';
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.backgroundColor = 'white';
+                  e.target.style.borderColor = '#e2e8f0';
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)';
+                }}
+              >
+                {preset.title}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div
-          style={{
-            border: '2px dashed #cbd5e1',
-            borderRadius: '12px',
-            padding: '20px',
-            minHeight: '200px',
-            backgroundColor: '#f8fafc',
-            transition: 'all 0.3s ease',
-          }}
-        >
+        {/* 드래그앤드롭 영역 */}
+        <div style={styles.dropArea}>
           {shuffled.length === 0 ? (
             <div
               style={{
                 color: '#64748b',
                 textAlign: 'center',
                 padding: '40px 20px',
-                fontSize: '18px',
-                fontWeight: '500',
+                fontSize: 18,
+                fontWeight: 500,
               }}
             >
-              ✨ 문장을 입력하고 섞어보세요!
+              ✨ 위에서 지문을 선택해주세요!
             </div>
           ) : (
             shuffled.map((item, idx) => (
@@ -209,172 +305,39 @@ function App() {
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, idx)}
                 onDragEnd={handleDragEnd}
-                style={{
-                  backgroundColor: 'white',
-                  border: '2px solid #e2e8f0',
-                  borderRadius: '10px',
-                  padding: '16px',
-                  marginBottom: '12px',
-                  cursor: 'move',
-                  transition: 'all 0.3s ease',
-                  userSelect: 'none',
-                  fontSize: '17px',
-                  lineHeight: '1.6',
-                  opacity: draggedIndex === idx ? 0.5 : 1,
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-                }}
-                onMouseOver={(e) => {
-                  if (draggedIndex !== idx) {
-                    e.target.style.borderColor = '#3b82f6';
-                    e.target.style.transform = 'translateY(-2px)';
-                    e.target.style.boxShadow = '0 4px 15px rgba(0,0,0,0.1)';
-                  }
-                }}
-                onMouseOut={(e) => {
-                  if (draggedIndex !== idx) {
-                    e.target.style.borderColor = '#e2e8f0';
-                    e.target.style.transform = 'translateY(0)';
-                    e.target.style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)';
-                  }
-                }}
+                style={styles.cardItem(draggedIndex === idx)}
               >
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+                  <span style={styles.numberBadge}>{idx + 1}</span>
+                  <span style={{ color: '#1e293b' }}>{item.content}</span>
+                </div>
                 <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
+                  style={{ display: 'flex', flexDirection: 'column', gap: 2 }}
                 >
-                  <div
-                    style={{
-                      flex: 1,
-                      paddingRight: '16px',
-                      color: '#1e293b',
-                    }}
+                  <button
+                    onClick={() => moveUp(idx)}
+                    disabled={idx === 0}
+                    style={styles.upDownBtn(idx === 0)}
                   >
-                    <span
-                      style={{
-                        display: 'inline-block',
-                        width: '24px',
-                        height: '24px',
-                        backgroundColor: '#3b82f6',
-                        color: 'white',
-                        borderRadius: '50%',
-                        textAlign: 'center',
-                        lineHeight: '24px',
-                        fontSize: '14px',
-                        fontWeight: 'bold',
-                        marginRight: '12px',
-                      }}
-                    >
-                      {idx + 1}
-                    </span>
-                    {item.content}
-                  </div>
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '4px',
-                    }}
+                    ↑
+                  </button>
+                  <button
+                    onClick={() => moveDown(idx)}
+                    disabled={idx === shuffled.length - 1}
+                    style={styles.upDownBtn(idx === shuffled.length - 1)}
                   >
-                    <button
-                      onClick={() => moveUp(idx)}
-                      disabled={idx === 0}
-                      style={{
-                        width: '32px',
-                        height: '32px',
-                        border: 'none',
-                        borderRadius: '6px',
-                        fontSize: '16px',
-                        fontWeight: 'bold',
-                        cursor: idx === 0 ? 'not-allowed' : 'pointer',
-                        backgroundColor: idx === 0 ? '#e2e8f0' : '#3b82f6',
-                        color: idx === 0 ? '#94a3b8' : 'white',
-                        transition: 'all 0.2s ease',
-                      }}
-                      onMouseOver={(e) => {
-                        if (idx !== 0) {
-                          e.target.style.backgroundColor = '#2563eb';
-                          e.target.style.transform = 'scale(1.1)';
-                        }
-                      }}
-                      onMouseOut={(e) => {
-                        if (idx !== 0) {
-                          e.target.style.backgroundColor = '#3b82f6';
-                          e.target.style.transform = 'scale(1)';
-                        }
-                      }}
-                    >
-                      ↑
-                    </button>
-                    <button
-                      onClick={() => moveDown(idx)}
-                      disabled={idx === shuffled.length - 1}
-                      style={{
-                        width: '32px',
-                        height: '32px',
-                        border: 'none',
-                        borderRadius: '6px',
-                        fontSize: '16px',
-                        fontWeight: 'bold',
-                        cursor:
-                          idx === shuffled.length - 1
-                            ? 'not-allowed'
-                            : 'pointer',
-                        backgroundColor:
-                          idx === shuffled.length - 1 ? '#e2e8f0' : '#3b82f6',
-                        color:
-                          idx === shuffled.length - 1 ? '#94a3b8' : 'white',
-                        transition: 'all 0.2s ease',
-                      }}
-                      onMouseOver={(e) => {
-                        if (idx !== shuffled.length - 1) {
-                          e.target.style.backgroundColor = '#2563eb';
-                          e.target.style.transform = 'scale(1.1)';
-                        }
-                      }}
-                      onMouseOut={(e) => {
-                        if (idx !== shuffled.length - 1) {
-                          e.target.style.backgroundColor = '#3b82f6';
-                          e.target.style.transform = 'scale(1)';
-                        }
-                      }}
-                    >
-                      ↓
-                    </button>
-                  </div>
+                    ↓
+                  </button>
                 </div>
               </div>
             ))
           )}
         </div>
 
+        {/* 정답 확인 버튼 */}
         {shuffled.length > 0 && (
-          <div style={{ marginTop: '24px', textAlign: 'center' }}>
-            <button
-              onClick={check}
-              style={{
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                color: 'white',
-                padding: '14px 28px',
-                border: 'none',
-                borderRadius: '10px',
-                fontSize: '18px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                boxShadow: '0 4px 15px rgba(16, 185, 129, 0.3)',
-              }}
-              onMouseOver={(e) => {
-                e.target.style.transform = 'translateY(-2px)';
-                e.target.style.boxShadow = '0 6px 20px rgba(16, 185, 129, 0.4)';
-              }}
-              onMouseOut={(e) => {
-                e.target.style.transform = 'translateY(0)';
-                e.target.style.boxShadow = '0 4px 15px rgba(16, 185, 129, 0.3)';
-              }}
-            >
+          <div style={{ textAlign: 'center' }}>
+            <button style={styles.checkBtn} onClick={check}>
               ✅ 정답 확인
             </button>
           </div>
