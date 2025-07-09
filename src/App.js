@@ -30,6 +30,9 @@ function App() {
   const [selectedTitle, setSelectedTitle] = useState('');
   const [showMessage, setShowMessage] = useState(false);
   const [timeLeft, setTimeLeft] = useState(2);
+  const [isCorrect, setIsCorrect] = useState(false);
+  // New state for progress bar shrink
+  const [barShrink, setBarShrink] = useState(false);
 
   const resetToHome = () => {
     setStep('select');
@@ -72,25 +75,51 @@ function App() {
     const original = sentences.map((s) => s.content).join('');
     const current = shuffled.map((s) => s.content).join('');
     if (original === current) {
+      setIsCorrect(true);
       setTimeLeft(2);
       setShowMessage(true);
     } else {
-      alert('❌ 순서가 다릅니다! 다시 시도해보세요.');
+      setIsCorrect(false);
+      setShowMessage(true);
+      // Do not reset timeLeft for incorrect answer
     }
   };
 
+  // 정답일 때 타이머 카운트다운 효과
   React.useEffect(() => {
-    if (!showMessage) return;
-    if (timeLeft <= 0) {
+    if (!showMessage || !isCorrect) return;
+
+    // 타이머 카운트다운
+    const countdownTimer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(countdownTimer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    // 2초 후 홈으로 이동
+    const homeTimer = setTimeout(() => {
       setShowMessage(false);
       resetToHome();
-      return;
+    }, 2000);
+
+    return () => {
+      clearInterval(countdownTimer);
+      clearTimeout(homeTimer);
+    };
+  }, [showMessage, isCorrect]);
+
+  // Effect to control barShrink state
+  React.useEffect(() => {
+    if (showMessage && isCorrect) {
+      setBarShrink(true);
+    } else {
+      setBarShrink(false);
     }
-    const timer = setTimeout(() => {
-      setTimeLeft((prev) => prev - 1);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, [showMessage, timeLeft]);
+  }, [showMessage, isCorrect]);
 
   const moveUp = (index) => {
     if (index === 0) return;
@@ -267,14 +296,6 @@ function App() {
 
         {step === 'solve' && (
           <>
-            <div style={{ textAlign: 'right', marginBottom: 8 }}>
-              <button
-                onClick={resetToHome}
-                style={{ ...styles.checkBtn, background: '#e11d48' }}
-              >
-                🔙 처음으로
-              </button>
-            </div>
             <h3
               style={{
                 textAlign: 'center',
@@ -322,8 +343,20 @@ function App() {
                 </div>
               ))}
             </div>
-
-            <div style={{ textAlign: 'center' }}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+                gap: 12,
+                marginTop: 24,
+              }}
+            >
+              <button
+                onClick={resetToHome}
+                style={{ ...styles.checkBtn, background: '#e11d48' }}
+              >
+                🔙 처음으로
+              </button>
               <button style={styles.checkBtn} onClick={check}>
                 ✅ 정답 확인
               </button>
@@ -357,62 +390,48 @@ function App() {
                 width: '90%',
               }}
             >
-              <button
-                onClick={() => {
-                  setShowMessage(false);
-                  resetToHome();
-                }}
-                style={{
-                  position: 'absolute',
-                  top: 12,
-                  right: 12,
-                  background: 'transparent',
-                  border: 'none',
-                  fontSize: 20,
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  color: '#94a3b8',
-                }}
-              >
-                ×
-              </button>
               <div
                 style={{
                   fontWeight: 700,
                   fontSize: 18,
-                  color: '#10b981',
+                  color: isCorrect ? '#10b981' : '#ef4444',
                   marginBottom: 12,
                 }}
               >
-                🎉 정답입니다! {timeLeft}초 후 처음 화면으로 돌아갑니다.
+                {isCorrect
+                  ? `🎉 정답입니다! ${timeLeft}초 후 처음 화면으로 돌아갑니다.`
+                  : '❌ 순서가 다릅니다! 다시 시도해보세요.'}
               </div>
-              <div
-                style={{
-                  width: '100%',
-                  height: 10,
-                  backgroundColor: '#e2e8f0',
-                  borderRadius: 6,
-                  overflow: 'hidden',
-                }}
-              >
+              {isCorrect && (
                 <div
                   style={{
-                    width: `${(timeLeft / 2) * 100}%`,
-                    height: '100%',
-                    backgroundColor: '#10b981',
-                    transition: 'width 1s linear',
+                    width: '100%',
+                    height: 10,
+                    backgroundColor: '#e2e8f0',
+                    borderRadius: 6,
+                    overflow: 'hidden',
                   }}
-                />
-              </div>
+                >
+                  <div
+                    style={{
+                      width: barShrink ? '0%' : '100%',
+                      height: '100%',
+                      backgroundColor: '#10b981',
+                      transition: 'width 2s linear',
+                    }}
+                  />
+                </div>
+              )}
               <button
                 onClick={() => {
                   setShowMessage(false);
-                  resetToHome();
+                  if (isCorrect) resetToHome();
+                  // Do nothing on incorrect answer
                 }}
                 style={{
                   marginTop: 16,
                   padding: '10px 20px',
-                  backgroundColor: '#ef4444',
+                  backgroundColor: isCorrect ? '#ef4444' : '#3b82f6',
                   color: 'white',
                   border: 'none',
                   borderRadius: 8,
@@ -422,7 +441,7 @@ function App() {
                   boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
                 }}
               >
-                🚪 나가기
+                {isCorrect ? '🚪 나가기' : '🔄 다시 시도'}
               </button>
             </div>
           </div>
