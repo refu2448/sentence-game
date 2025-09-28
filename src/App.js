@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import presetTexts from './presetTexts';
+import { getStageTexts, getStageInfo, getTotalStages } from './presetTexts';
+import './App.css';
 
 // 문장 단위로 분할 및 고유 id 부여
 function splitSentences(text) {
@@ -22,23 +23,45 @@ function shuffle(array) {
   return arr;
 }
 
+// 난이도를 CSS 클래스명으로 변환
+function getDifficultyClass(difficulty) {
+  switch (difficulty) {
+    case '초급': return 'beginner';
+    case '중급': return 'intermediate';
+    case '중상급': return 'advanced';
+    case '고급': return 'expert';
+    default: return '';
+  }
+}
+
 function App() {
   const [sentences, setSentences] = useState([]);
   const [shuffled, setShuffled] = useState([]);
   const [draggedIndex, setDraggedIndex] = useState(null);
-  const [step, setStep] = useState('select');
+  const [step, setStep] = useState('stage'); // 'stage' -> 'select' -> 'solve'
+  const [selectedStage, setSelectedStage] = useState(null);
   const [selectedTitle, setSelectedTitle] = useState('');
   const [showMessage, setShowMessage] = useState(false);
   const [timeLeft, setTimeLeft] = useState(2);
   const [isCorrect, setIsCorrect] = useState(false);
-  // New state for progress bar shrink
   const [barShrink, setBarShrink] = useState(false);
 
   const resetToHome = () => {
-    setStep('select');
+    setStep('stage');
     setSentences([]);
     setShuffled([]);
+    setSelectedStage(null);
     setSelectedTitle('');
+  };
+
+  const handleStageSelect = (stageNumber) => {
+    setSelectedStage(stageNumber);
+    setStep('select');
+  };
+
+  const backToStageSelect = () => {
+    setSelectedStage(null);
+    setStep('stage');
   };
 
   const handlePresetSelect = (selectedText, title) => {
@@ -81,7 +104,6 @@ function App() {
     } else {
       setIsCorrect(false);
       setShowMessage(true);
-      // Do not reset timeLeft for incorrect answer
     }
   };
 
@@ -103,7 +125,7 @@ function App() {
     // 2초 후 홈으로 이동
     const homeTimer = setTimeout(() => {
       setShowMessage(false);
-      resetToHome();
+      setStep('select');
     }, 2000);
 
     return () => {
@@ -135,177 +157,99 @@ function App() {
     setShuffled(items);
   };
 
-  // 스타일링 객체
-  const styles = {
-    container: {
-      maxWidth: 800,
-      margin: '0 auto',
-      padding: 20,
-      fontFamily:
-        '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-      backgroundColor: '#f8fafc',
-      minHeight: '100vh',
-    },
-    card: {
-      backgroundColor: 'white',
-      borderRadius: 16,
-      padding: 30,
-      boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
-      border: '1px solid #e2e8f0',
-    },
-    title: {
-      fontSize: 28,
-      fontWeight: 'bold',
-      marginBottom: 24,
-      textAlign: 'center',
-      color: '#1e293b',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      WebkitBackgroundClip: 'text',
-      WebkitTextFillColor: 'transparent',
-    },
-    presetGrid: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-      gap: 12,
-      marginBottom: 16,
-    },
-    presetBtn: {
-      padding: '16px 20px',
-      backgroundColor: 'white',
-      border: '2px solid #e2e8f0',
-      borderRadius: 12,
-      fontSize: 16,
-      fontWeight: 600,
-      cursor: 'pointer',
-      color: '#374151',
-      textAlign: 'center',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-      transition: 'all 0.3s',
-    },
-    dropArea: {
-      border: '2px dashed #cbd5e1',
-      borderRadius: 12,
-      padding: 20,
-      minHeight: 200,
-      backgroundColor: '#f8fafc',
-      transition: 'all 0.3s',
-    },
-    cardItem: (isDragging) => ({
-      backgroundColor: 'white',
-      border: '2px solid #e2e8f0',
-      borderRadius: 10,
-      padding: 16,
-      marginBottom: 12,
-      cursor: 'move',
-      userSelect: 'none',
-      fontSize: 17,
-      lineHeight: 1.6,
-      opacity: isDragging ? 0.5 : 1,
-      boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-      transition: 'all 0.3s',
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-    }),
-    numberBadge: {
-      display: 'inline-block',
-      width: 24,
-      height: 24,
-      backgroundColor: '#3b82f6',
-      color: 'white',
-      borderRadius: '50%',
-      textAlign: 'center',
-      lineHeight: '24px',
-      fontSize: 14,
-      fontWeight: 'bold',
-      marginRight: 12,
-    },
-    upDownBtn: (disabled) => ({
-      width: 32,
-      height: 32,
-      border: 'none',
-      borderRadius: 6,
-      fontSize: 16,
-      fontWeight: 'bold',
-      cursor: disabled ? 'not-allowed' : 'pointer',
-      backgroundColor: disabled ? '#e2e8f0' : '#3b82f6',
-      color: disabled ? '#94a3b8' : 'white',
-      transition: 'all 0.2s',
-      marginBottom: 4,
-    }),
-    checkBtn: {
-      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-      color: 'white',
-      padding: '14px 28px',
-      border: 'none',
-      borderRadius: 10,
-      fontSize: 18,
-      fontWeight: 600,
-      cursor: 'pointer',
-      boxShadow: '0 4px 15px rgba(16, 185, 129, 0.3)',
-      marginTop: 24,
-      transition: 'all 0.3s',
-    },
-  };
-
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <h2 style={styles.title}>📝 영어 문장 순서 맞추기</h2>
+    <div className="sentence-game-container">
+      <div className="main-card">
+        <h2 className="main-title">📝 영어 문장 순서 맞추기</h2>
 
+        {/* 스테이지 선택 화면 */}
+        {step === 'stage' && (
+          <div style={{ marginBottom: 24 }}>
+            <h3 className="stage-select-title">
+              🎯 스테이지를 선택하세요
+            </h3>
+            <div className="stage-grid">
+              {Array.from({ length: getTotalStages() }, (_, i) => i + 1).map((stage) => {
+                const stageInfo = getStageInfo(stage);
+                const difficultyClass = getDifficultyClass(stageInfo?.difficulty);
+                return (
+                  <button
+                    key={stage}
+                    className={`stage-btn ${difficultyClass}`}
+                    onClick={() => handleStageSelect(stage)}
+                  >
+                    <div className="stage-info">
+                      {stageInfo?.name || `Stage ${stage}`}
+                    </div>
+                    <div className="stage-description">
+                      {stageInfo?.title}
+                    </div>
+                    <div className={`difficulty-badge ${difficultyClass}`}>
+                      {stageInfo?.difficulty}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* 지문 선택 화면 */}
         {step === 'select' && (
           <div style={{ marginBottom: 24 }}>
-            <h3
-              style={{
-                fontSize: 20,
-                fontWeight: 600,
-                marginBottom: 16,
-                color: '#374151',
-                textAlign: 'center',
-              }}
+            <button
+              onClick={backToStageSelect}
+              className="back-btn"
             >
-              📚 지문을 선택하세요
-            </h3>
-            <div style={styles.presetGrid}>
-              {presetTexts.map((preset) => (
+              ← 스테이지 선택으로
+            </button>
+            
+            {(() => {
+              const stageInfo = getStageInfo(selectedStage);
+              const difficultyClass = getDifficultyClass(stageInfo?.difficulty);
+              return (
+                <>
+                  <h3 className="text-select-title">
+                    📚 {stageInfo?.name || `Stage ${selectedStage}`} - {stageInfo?.title}
+                  </h3>
+                  <div className="stage-detail">
+                    {stageInfo?.description} 
+                    <span className={`difficulty-badge ${difficultyClass}`}>
+                      {stageInfo?.difficulty}
+                    </span>
+                  </div>
+                </>
+              );
+            })()}
+            
+            <div className="preset-grid">
+              {getStageTexts(selectedStage).map((preset) => (
                 <button
                   key={preset.id}
-                  style={styles.presetBtn}
+                  className="preset-btn"
                   onClick={() =>
                     handlePresetSelect(preset.content, preset.title)
                   }
-                  onMouseOver={(e) => {
-                    e.target.style.backgroundColor = '#f8fafc';
-                    e.target.style.borderColor = '#3b82f6';
-                    e.target.style.transform = 'translateY(-2px)';
-                    e.target.style.boxShadow = '0 4px 15px rgba(0,0,0,0.1)';
-                  }}
-                  onMouseOut={(e) => {
-                    e.target.style.backgroundColor = 'white';
-                    e.target.style.borderColor = '#e2e8f0';
-                    e.target.style.transform = 'translateY(0)';
-                    e.target.style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)';
-                  }}
                 >
                   {preset.title}
+                  {preset.topic && (
+                    <div className="topic-tag">
+                      #{preset.topic}
+                    </div>
+                  )}
                 </button>
               ))}
             </div>
           </div>
         )}
 
+        {/* 문제 풀이 화면 */}
         {step === 'solve' && (
           <>
-            <h3
-              style={{
-                textAlign: 'center',
-                marginBottom: 16,
-                color: '#1e293b',
-              }}
-            >
+            <h3 className="solve-title">
               🧩 {selectedTitle}
             </h3>
-            <div style={styles.dropArea}>
+            <div className="drop-area">
               {shuffled.map((item, idx) => (
                 <div
                   key={item.id}
@@ -314,28 +258,24 @@ function App() {
                   onDragOver={handleDragOver}
                   onDrop={(e) => handleDrop(e, idx)}
                   onDragEnd={handleDragEnd}
-                  style={styles.cardItem(draggedIndex === idx)}
+                  className={`card-item ${draggedIndex === idx ? 'dragging' : ''}`}
                 >
-                  <div
-                    style={{ flex: 1, display: 'flex', alignItems: 'center' }}
-                  >
-                    <span style={styles.numberBadge}>{idx + 1}</span>
-                    <span style={{ color: '#1e293b' }}>{item.content}</span>
+                  <div className="sentence-content">
+                    <span className="number-badge">{idx + 1}</span>
+                    <span className="sentence-text">{item.content}</span>
                   </div>
-                  <div
-                    style={{ display: 'flex', flexDirection: 'column', gap: 2 }}
-                  >
+                  <div className="move-buttons">
                     <button
                       onClick={() => moveUp(idx)}
                       disabled={idx === 0}
-                      style={styles.upDownBtn(idx === 0)}
+                      className="move-btn"
                     >
                       ↑
                     </button>
                     <button
                       onClick={() => moveDown(idx)}
                       disabled={idx === shuffled.length - 1}
-                      style={styles.upDownBtn(idx === shuffled.length - 1)}
+                      className="move-btn"
                     >
                       ↓
                     </button>
@@ -343,81 +283,44 @@ function App() {
                 </div>
               ))}
             </div>
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'center',
-                gap: 12,
-                marginTop: 24,
-              }}
-            >
+            <div className="action-buttons">
               <button
-                onClick={resetToHome}
-                style={{ ...styles.checkBtn, background: '#e11d48' }}
+                onClick={() => {
+                  setStep('select');
+                  setSentences([]);
+                  setShuffled([]);
+                  setSelectedTitle('');
+                }}
+                className="reset-btn"
               >
                 🔙 처음으로
               </button>
-              <button style={styles.checkBtn} onClick={check}>
+              <button 
+                className="check-btn" 
+                onClick={check}
+              >
                 ✅ 정답 확인
               </button>
             </div>
           </>
         )}
+
+        {/* 결과 모달 */}
         {showMessage && (
-          <div
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              backgroundColor: 'rgba(0,0,0,0.4)',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              zIndex: 1000,
-            }}
-          >
-            <div
-              style={{
-                position: 'relative',
-                backgroundColor: 'white',
-                padding: 24,
-                borderRadius: 12,
-                boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
-                textAlign: 'center',
-                maxWidth: 360,
-                width: '90%',
-              }}
-            >
-              <div
-                style={{
-                  fontWeight: 700,
-                  fontSize: 18,
-                  color: isCorrect ? '#10b981' : '#ef4444',
-                  marginBottom: 12,
-                }}
-              >
+          <div className="modal-overlay">
+            <div className="modal-content">
+              <div className={`modal-message ${isCorrect ? 'correct' : 'incorrect'}`}>
                 {isCorrect
                   ? `🎉 정답입니다! ${timeLeft}초 후 처음 화면으로 돌아갑니다.`
                   : '❌ 순서가 다릅니다! 다시 시도해보세요.'}
               </div>
               {isCorrect && (
-                <div
-                  style={{
-                    width: '100%',
-                    height: 10,
-                    backgroundColor: '#e2e8f0',
-                    borderRadius: 6,
-                    overflow: 'hidden',
-                  }}
-                >
-                  <div
-                    style={{
+                <div className="progress-container">
+                  <div 
+                    className="progress-bar"
+                    style={{ 
                       width: barShrink ? '0%' : '100%',
-                      height: '100%',
-                      backgroundColor: '#10b981',
-                      transition: 'width 2s linear',
+                      transition: 'width 2s linear'
                     }}
                   />
                 </div>
@@ -425,21 +328,9 @@ function App() {
               <button
                 onClick={() => {
                   setShowMessage(false);
-                  if (isCorrect) resetToHome();
-                  // Do nothing on incorrect answer
+                  if (isCorrect) setStep('select');
                 }}
-                style={{
-                  marginTop: 16,
-                  padding: '10px 20px',
-                  backgroundColor: isCorrect ? '#ef4444' : '#3b82f6',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: 8,
-                  fontSize: 15,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
-                }}
+                className={`modal-btn ${isCorrect ? 'correct' : 'incorrect'}`}
               >
                 {isCorrect ? '🚪 나가기' : '🔄 다시 시도'}
               </button>
